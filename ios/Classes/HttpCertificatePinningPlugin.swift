@@ -8,7 +8,7 @@ public class HttpCertificatePinningPlugin: NSObject, FlutterPlugin {
     var flutterResult: FlutterResult?
 
     public static func register(with registrar: FlutterPluginRegistrar) {
-        let channel = FlutterMethodChannel(name: "http_certificate_pinning", binaryMessenger: registrar.messenger())
+        let channel = FlutterMethodChannel(name: "http_certificate_pinning_plus", binaryMessenger: registrar.messenger())
         let instance = HttpCertificatePinningPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }

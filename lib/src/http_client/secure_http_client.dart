@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:http/io_client.dart';
-import 'package:http_certificate_pinning/http_certificate_pinning.dart';
+import 'package:http_certificate_pinning_plus/http_certificate_pinning_plus.dart';
 
 class SecureHttpClient extends http.BaseClient {
   List<String> allowedSHAFingerprints;

@@ -1,4 +1,4 @@
-package diefferson.http_certificate_pinning
+package site.txtool.http_certificate_pinning_plus
 
 import android.net.http.X509TrustManagerExtensions
 import android.os.Handler
@@ -46,7 +46,7 @@ public class HttpCertificatePinningPlugin : FlutterPlugin, MethodCallHandler {
 
 
   override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
-    val channel = MethodChannel(binding.binaryMessenger, "http_certificate_pinning")
+    val channel = MethodChannel(binding.binaryMessenger, "http_certificate_pinning_plus")
     channel.setMethodCallHandler(HttpCertificatePinningPlugin())
   }
 

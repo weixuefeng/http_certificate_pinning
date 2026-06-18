@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http_certificate_pinning/http_certificate_pinning.dart';
+import 'package:http_certificate_pinning_plus/http_certificate_pinning_plus.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const channel = MethodChannel('http_certificate_pinning');
+  const channel = MethodChannel('http_certificate_pinning_plus');
 
   tearDown(() {
     HttpCertificatePinning.clearCache();

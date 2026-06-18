@@ -14,7 +14,7 @@ class HttpCertificatePinning {
   static int _cacheGeneration = 0;
 
   static const MethodChannel _channel = const MethodChannel(
-    'http_certificate_pinning',
+    'http_certificate_pinning_plus',
   );
 
   static final HttpCertificatePinning _sslPinning =

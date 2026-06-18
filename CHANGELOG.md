@@ -75,3 +75,11 @@ Upgrading to last plugin interface
 Bumping Alamofire version to 5.9.0
 Support for Flutter 3.29.0
 
+## 3.1.0
+
+Initial `http_certificate_pinning_plus` release.
+
+* Adds leaf or root certificate fingerprint validation.
+* Adds in-memory caching for successful certificate checks.
+* Coalesces concurrent checks for the same certificate identity.
+* Keeps Dio and http client helpers compatible with the original package API.

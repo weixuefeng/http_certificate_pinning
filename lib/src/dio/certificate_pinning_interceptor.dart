@@ -9,6 +9,7 @@ class CertificatePinningInterceptor extends Interceptor {
   final List<String> _allowedSHAFingerprints;
   final int _timeout;
   final CertificatePinningTarget _certificatePinningTarget;
+  final Duration _cacheDuration;
   final bool callFollowingErrorInterceptor;
   Future<String>? secure = Future.value('');
 
@@ -17,12 +18,14 @@ class CertificatePinningInterceptor extends Interceptor {
     int timeout = 0,
     CertificatePinningTarget certificatePinningTarget =
         CertificatePinningTarget.leaf,
+    Duration cacheDuration = const Duration(minutes: 10),
     this.callFollowingErrorInterceptor = false,
-  }) : _allowedSHAFingerprints = allowedSHAFingerprints != null
-           ? allowedSHAFingerprints
-           : <String>[],
-       _certificatePinningTarget = certificatePinningTarget,
-       _timeout = timeout;
+  })  : _allowedSHAFingerprints = allowedSHAFingerprints != null
+            ? allowedSHAFingerprints
+            : <String>[],
+        _certificatePinningTarget = certificatePinningTarget,
+        _cacheDuration = cacheDuration,
+        _timeout = timeout;
 
   @override
   Future onRequest(
@@ -47,6 +50,7 @@ class CertificatePinningInterceptor extends Interceptor {
         sha: SHA.SHA256,
         allowedSHAFingerprints: _allowedSHAFingerprints,
         certificatePinningTarget: _certificatePinningTarget,
+        cacheDuration: _cacheDuration,
         timeout: _timeout,
       );
 

@@ -10,6 +10,7 @@ import 'package:http_certificate_pinning/http_certificate_pinning.dart';
 class SecureHttpClient extends http.BaseClient {
   List<String> allowedSHAFingerprints;
   CertificatePinningTarget certificatePinningTarget;
+  Duration cacheDuration;
 
   http.BaseClient _client = IOClient();
 
@@ -18,6 +19,7 @@ class SecureHttpClient extends http.BaseClient {
   SecureHttpClient._internal({
     required this.allowedSHAFingerprints,
     required this.certificatePinningTarget,
+    required this.cacheDuration,
     http.BaseClient? customClient,
   }) {
     if (customClient != null) {
@@ -29,11 +31,13 @@ class SecureHttpClient extends http.BaseClient {
     List<String> allowedSHAFingerprints, {
     CertificatePinningTarget certificatePinningTarget =
         CertificatePinningTarget.leaf,
+    Duration cacheDuration = const Duration(minutes: 10),
     http.BaseClient? customClient,
   }) {
     return SecureHttpClient._internal(
       allowedSHAFingerprints: allowedSHAFingerprints,
       certificatePinningTarget: certificatePinningTarget,
+      cacheDuration: cacheDuration,
       customClient: customClient,
     );
   }
@@ -49,28 +53,32 @@ class SecureHttpClient extends http.BaseClient {
     Map<String, String>? headers,
     body,
     Encoding? encoding,
-  }) => _sendUnstreamed("POST", url, headers, body, encoding);
+  }) =>
+      _sendUnstreamed("POST", url, headers, body, encoding);
 
   Future<Response> put(
     url, {
     Map<String, String>? headers,
     body,
     Encoding? encoding,
-  }) => _sendUnstreamed("PUT", url, headers, body, encoding);
+  }) =>
+      _sendUnstreamed("PUT", url, headers, body, encoding);
 
   Future<Response> patch(
     url, {
     Map<String, String>? headers,
     body,
     Encoding? encoding,
-  }) => _sendUnstreamed("PATCH", url, headers, body, encoding);
+  }) =>
+      _sendUnstreamed("PATCH", url, headers, body, encoding);
 
   Future<Response> delete(
     url, {
     Map<String, String>? headers,
     body,
     Encoding? encoding,
-  }) => _sendUnstreamed("DELETE", url, headers, body, encoding);
+  }) =>
+      _sendUnstreamed("DELETE", url, headers, body, encoding);
 
   Future<String> read(url, {Map<String, String>? headers}) {
     return get(url, headers: headers).then((response) {
@@ -107,6 +115,7 @@ class SecureHttpClient extends http.BaseClient {
       sha: SHA.SHA256,
       allowedSHAFingerprints: allowedSHAFingerprints,
       certificatePinningTarget: certificatePinningTarget,
+      cacheDuration: cacheDuration,
       timeout: 50,
     );
 

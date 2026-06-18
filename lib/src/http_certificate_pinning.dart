@@ -4,9 +4,12 @@ import 'package:flutter/services.dart';
 
 enum SHA { SHA1, SHA256 }
 
+enum CertificatePinningTarget { leaf, root }
+
 class HttpCertificatePinning {
-  static const MethodChannel _channel =
-      const MethodChannel('http_certificate_pinning');
+  static const MethodChannel _channel = const MethodChannel(
+    'http_certificate_pinning',
+  );
 
   static final HttpCertificatePinning _sslPinning =
       HttpCertificatePinning._internal();
@@ -21,6 +24,8 @@ class HttpCertificatePinning {
     required String serverURL,
     required SHA sha,
     required List<String> allowedSHAFingerprints,
+    CertificatePinningTarget certificatePinningTarget =
+        CertificatePinningTarget.leaf,
     Map<String, String>? headerHttp,
     int? timeout,
   }) async {
@@ -28,9 +33,14 @@ class HttpCertificatePinning {
       "url": serverURL,
       "headers": headerHttp ?? {},
       "type": sha.toString().split(".").last,
-      "fingerprints":
-          allowedSHAFingerprints.map((a) => a.replaceAll(":", "")).toList(),
-      "timeout": timeout
+      "certificatePinningTarget": certificatePinningTarget
+          .toString()
+          .split(".")
+          .last,
+      "fingerprints": allowedSHAFingerprints
+          .map((a) => a.replaceAll(":", ""))
+          .toList(),
+      "timeout": timeout,
     };
     String resp = await _channel.invokeMethod('check', params);
     return resp;

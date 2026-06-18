@@ -1,6 +1,6 @@
 package diefferson.http_certificate_pinning
 
-import java.net.UnknownHostException
+import android.net.http.X509TrustManagerExtensions
 import android.os.Handler
 import android.os.Looper
 import android.os.StrictMode
@@ -11,20 +11,30 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import java.io.IOException
+import java.net.UnknownHostException
 import java.net.SocketTimeoutException
 import java.net.URL
+import java.security.KeyStore
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.cert.Certificate
+import java.security.cert.CertificateException
 import java.security.cert.CertificateEncodingException
+import java.security.cert.X509Certificate
 import java.text.ParseException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import javax.net.ssl.HttpsURLConnection
-import javax.security.cert.CertificateException
+import javax.net.ssl.TrustManagerFactory
+import javax.net.ssl.X509TrustManager
 
 /** HttpCertificatePinningPlugin */
 public class HttpCertificatePinningPlugin : FlutterPlugin, MethodCallHandler {
+
+  companion object {
+    private const val CERTIFICATE_PINNING_TARGET_LEAF = "leaf"
+    private const val CERTIFICATE_PINNING_TARGET_ROOT = "root"
+  }
 
   private var threadExecutorService: ExecutorService? = null
   private var handler: Handler? = null
@@ -61,11 +71,13 @@ public class HttpCertificatePinningPlugin : FlutterPlugin, MethodCallHandler {
     val serverURL: String = arguments.get("url") as String
     val allowedFingerprints: List<String> = arguments.get("fingerprints") as List<String>
     val httpHeaderArgs: Map<String, String> = arguments.get("headers") as Map<String, String>
-    val timeout: Int = arguments.get("timeout") as Int
+    val timeout: Int = (arguments.get("timeout") as? Int) ?: 0
     val type: String = arguments.get("type") as String
+    val certificatePinningTarget: String =
+      (arguments.get("certificatePinningTarget") as? String) ?: CERTIFICATE_PINNING_TARGET_LEAF
 
     try {
-      if (this.checkConnexion(serverURL, allowedFingerprints, httpHeaderArgs, timeout, type)) {
+      if (this.checkConnexion(serverURL, allowedFingerprints, httpHeaderArgs, timeout, type, certificatePinningTarget)) {
         handler?.post {
           result.success("CONNECTION_SECURE")
         }
@@ -94,24 +106,60 @@ public class HttpCertificatePinningPlugin : FlutterPlugin, MethodCallHandler {
   }
 
 
-  private fun checkConnexion(serverURL: String, allowedFingerprints: List<String>, httpHeaderArgs: Map<String, String>, timeout: Int, type: String): Boolean {
-    val sha: String = this.getFingerprint(serverURL, timeout, httpHeaderArgs, type)
-    return allowedFingerprints.map { fp -> fp.uppercase().replace("\\s".toRegex(), "") }.contains(sha)
+  private fun checkConnexion(serverURL: String, allowedFingerprints: List<String>, httpHeaderArgs: Map<String, String>, timeout: Int, type: String, certificatePinningTarget: String): Boolean {
+    val fingerprint: String = this.getFingerprint(serverURL, timeout, httpHeaderArgs, type, certificatePinningTarget)
+    val normalizedAllowedFingerprints = allowedFingerprints.map { fp -> fp.uppercase().replace("\\s".toRegex(), "") }
+
+    return normalizedAllowedFingerprints.contains(fingerprint)
   }
 
+
   @Throws(IOException::class, NoSuchAlgorithmException::class, CertificateException::class, CertificateEncodingException::class, SocketTimeoutException::class)
-  private fun getFingerprint(httpsURL: String, connectTimeout: Int, httpHeaderArgs: Map<String, String>, type: String): String {
+  private fun getFingerprint(httpsURL: String, connectTimeout: Int, httpHeaderArgs: Map<String, String>, type: String, certificatePinningTarget: String): String {
+      val url = URL(httpsURL)
+      val httpClient: HttpsURLConnection = url.openConnection() as HttpsURLConnection
+      if (connectTimeout > 0)
+          httpClient.connectTimeout = connectTimeout * 1000
+      httpHeaderArgs.forEach { (key, value) -> httpClient.setRequestProperty(key, value) }
 
-    val url = URL(httpsURL)
-    val httpClient: HttpsURLConnection = url.openConnection() as HttpsURLConnection
-    if (connectTimeout > 0)
-      httpClient.connectTimeout = connectTimeout * 1000
-    httpHeaderArgs.forEach { (key, value) -> httpClient.setRequestProperty(key, value) }
+      try {
+          httpClient.connect()
 
-    httpClient.connect()
+          val certificateChain = this.getValidatedCertificateChain(
+              host = url.host,
+              serverCertificates = httpClient.serverCertificates
+          )
+          val certificate = if (certificatePinningTarget.equals(CERTIFICATE_PINNING_TARGET_ROOT, ignoreCase = true)) {
+              certificateChain.last()
+          } else {
+              certificateChain.first()
+          }
 
-    val cert: Certificate = httpClient.serverCertificates[0] as Certificate
-    return this.hashString(type, cert.encoded)
+          return this.hashString(type, certificate.encoded)
+      } finally {
+          httpClient.disconnect()
+      }
+  }
+
+  private fun getValidatedCertificateChain(host: String, serverCertificates: Array<Certificate>): List<X509Certificate> {
+      val certificateChain = serverCertificates.map { cert -> cert as X509Certificate }.toTypedArray()
+      val trustManagerExtensions = X509TrustManagerExtensions(this.getDefaultX509TrustManager())
+      val authType = certificateChain.first().publicKey.algorithm
+
+      return try {
+          trustManagerExtensions.checkServerTrusted(certificateChain, authType, host)
+      } catch (e: Exception) {
+          certificateChain.toList()
+      }
+  }
+
+  private fun getDefaultX509TrustManager(): X509TrustManager {
+      val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+      trustManagerFactory.init(null as KeyStore?)
+
+      return trustManagerFactory.trustManagers
+          .filterIsInstance<X509TrustManager>()
+          .firstOrNull() ?: throw CertificateException("No X509TrustManager available")
   }
 
   private fun hashString(type: String, input: ByteArray) =

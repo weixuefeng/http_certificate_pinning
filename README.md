@@ -28,6 +28,12 @@ The Result is like:
 
 '59:58:57:5A:5B:5C:5D:59:58:57:5A:5B:5C:5D:59:58:57:5A:5B:5C:5D:59:58:57:5A:5B:5C:5D:59:58:57:5A:5B:5C:5D'
 
+By default the plugin validates the leaf certificate for the requested host.
+To validate the root certificate fingerprint instead, pass
+`certificatePinningTarget: CertificatePinningTarget.root`.
+The same optional parameter is available on `CertificatePinningInterceptor`
+and `SecureHttpClient.build`.
+
 
 ## Usage example
 
@@ -77,6 +83,7 @@ Future myCustomImplementation(String url, Map<String,String> headers, List<Strin
       headerHttp: headers,
       sha: SHA.SHA256,
       allowedSHAFingerprints:allowedSHAFingerprints,
+      certificatePinningTarget: CertificatePinningTarget.root,
       timeout : 50
     );
 

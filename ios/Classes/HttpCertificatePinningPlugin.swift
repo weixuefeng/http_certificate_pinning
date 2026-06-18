@@ -60,7 +60,12 @@ public class HttpCertificatePinningPlugin: NSObject, FlutterPlugin {
             timeout = timeoutArg
         }
 
-        let evaluator =   CertificateSHAFingerprintTrustEvaluator(pinnedFingerprints: fingerprints, type: type)
+        let certificatePinningTarget = args["certificatePinningTarget"] as? String ?? "leaf"
+        let evaluator = CertificateSHAFingerprintTrustEvaluator(
+            pinnedFingerprints: fingerprints,
+            type: type,
+            certificatePinningTarget: certificatePinningTarget
+        )
         let serverTrustManager = ServerTrustManager(allHostsMustBeEvaluated: false, evaluators: [host: evaluator])
         let manager = Alamofire.Session(configuration: URLSessionConfiguration.default,
                                                 serverTrustManager:   serverTrustManager)

@@ -8,17 +8,21 @@ import 'package:http_certificate_pinning/http_certificate_pinning.dart';
 class CertificatePinningInterceptor extends Interceptor {
   final List<String> _allowedSHAFingerprints;
   final int _timeout;
+  final CertificatePinningTarget _certificatePinningTarget;
   final bool callFollowingErrorInterceptor;
   Future<String>? secure = Future.value('');
 
   CertificatePinningInterceptor({
     List<String>? allowedSHAFingerprints,
     int timeout = 0,
+    CertificatePinningTarget certificatePinningTarget =
+        CertificatePinningTarget.leaf,
     this.callFollowingErrorInterceptor = false,
-  })  : _allowedSHAFingerprints = allowedSHAFingerprints != null
-            ? allowedSHAFingerprints
-            : <String>[],
-        _timeout = timeout;
+  }) : _allowedSHAFingerprints = allowedSHAFingerprints != null
+           ? allowedSHAFingerprints
+           : <String>[],
+       _certificatePinningTarget = certificatePinningTarget,
+       _timeout = timeout;
 
   @override
   Future onRequest(
@@ -42,6 +46,7 @@ class CertificatePinningInterceptor extends Interceptor {
         headerHttp: {},
         sha: SHA.SHA256,
         allowedSHAFingerprints: _allowedSHAFingerprints,
+        certificatePinningTarget: _certificatePinningTarget,
         timeout: _timeout,
       );
 
@@ -75,10 +80,7 @@ class CertificatePinningInterceptor extends Interceptor {
       }
 
       handler.reject(
-        DioException(
-          requestOptions: options,
-          error: error,
-        ),
+        DioException(requestOptions: options, error: error),
         callFollowingErrorInterceptor,
       );
     }

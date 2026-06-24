@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +10,6 @@ class CertificatePinningInterceptor extends Interceptor {
   final CertificatePinningTarget _certificatePinningTarget;
   final Duration _cacheDuration;
   final bool callFollowingErrorInterceptor;
-  Future<String>? secure = Future.value('');
 
   CertificatePinningInterceptor({
     List<String>? allowedSHAFingerprints,
@@ -33,18 +31,13 @@ class CertificatePinningInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     try {
-      // iOS bug: Alamofire is failing to return parallel requests for certificate validation
-      if (Platform.isIOS && secure != null) {
-        await secure;
-      }
-
       var baseUrl = options.baseUrl;
 
       if (options.path.contains('http') || options.baseUrl.isEmpty) {
         baseUrl = options.path;
       }
 
-      secure = HttpCertificatePinning.check(
+      final secureString = await HttpCertificatePinning.check(
         serverURL: baseUrl,
         headerHttp: {},
         sha: SHA.SHA256,
@@ -54,9 +47,7 @@ class CertificatePinningInterceptor extends Interceptor {
         timeout: _timeout,
       );
 
-      final secureString = await secure?.whenComplete(() => secure = null);
-
-      if (secureString?.contains('CONNECTION_SECURE') ?? false) {
+      if (secureString.contains('CONNECTION_SECURE')) {
         return super.onRequest(options, handler);
       } else {
         handler.reject(

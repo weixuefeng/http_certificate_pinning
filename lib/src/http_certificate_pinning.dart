@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 
@@ -11,6 +12,7 @@ class HttpCertificatePinning {
   static final Map<String, DateTime> _verifiedChecks = <String, DateTime>{};
   static final Map<String, Future<String>> _pendingChecks =
       <String, Future<String>>{};
+  static Future<void> _iosCheckQueue = Future<void>.value();
   static int _cacheGeneration = 0;
 
   static const MethodChannel _channel = const MethodChannel(
@@ -100,6 +102,30 @@ class HttpCertificatePinning {
   }
 
   static Future<String> _invokeCheck(Map<String, dynamic> params) async {
+    if (Platform.isIOS) {
+      return _enqueueIosCheck(() => _invokeNativeCheck(params));
+    }
+
+    return _invokeNativeCheck(params);
+  }
+
+  static Future<String> _enqueueIosCheck(
+    Future<String> Function() check,
+  ) async {
+    final previousCheck = _iosCheckQueue;
+    final completer = Completer<void>();
+    _iosCheckQueue = completer.future;
+
+    await previousCheck;
+
+    try {
+      return await check();
+    } finally {
+      completer.complete();
+    }
+  }
+
+  static Future<String> _invokeNativeCheck(Map<String, dynamic> params) async {
     String resp = await _channel.invokeMethod('check', params);
     return resp;
   }

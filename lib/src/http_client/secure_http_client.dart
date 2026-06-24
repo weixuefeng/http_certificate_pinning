@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
@@ -13,8 +12,6 @@ class SecureHttpClient extends http.BaseClient {
   Duration cacheDuration;
 
   http.BaseClient _client = IOClient();
-
-  Future<String>? secure = Future.value('');
 
   SecureHttpClient._internal({
     required this.allowedSHAFingerprints,
@@ -104,12 +101,7 @@ class SecureHttpClient extends http.BaseClient {
     body,
     Encoding? encoding,
   ]) async {
-    // iOS bug: Alamofire is failing to return parallel requests for certificate validation
-    if (Platform.isIOS && secure != null) {
-      await secure;
-    }
-
-    secure = HttpCertificatePinning.check(
+    final secureString = await HttpCertificatePinning.check(
       serverURL: url.toString(),
       headerHttp: {},
       sha: SHA.SHA256,
@@ -118,9 +110,6 @@ class SecureHttpClient extends http.BaseClient {
       cacheDuration: cacheDuration,
       timeout: 50,
     );
-
-    secure?.whenComplete(() => secure = null);
-    final secureString = await secure ?? '';
 
     if (secureString.contains("CONNECTION_SECURE")) {
       var request = Request(method, _fromUriOrString(url));

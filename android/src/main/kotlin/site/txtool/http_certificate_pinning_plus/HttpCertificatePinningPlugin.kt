@@ -34,6 +34,12 @@ public class HttpCertificatePinningPlugin : FlutterPlugin, MethodCallHandler {
   companion object {
     private const val CERTIFICATE_PINNING_TARGET_LEAF = "leaf"
     private const val CERTIFICATE_PINNING_TARGET_ROOT = "root"
+
+    @Volatile
+    private var defaultTrustManager: X509TrustManager? = null
+
+    @Volatile
+    private var trustManagerExtensions: X509TrustManagerExtensions? = null
   }
 
   private var threadExecutorService: ExecutorService? = null
@@ -148,7 +154,7 @@ public class HttpCertificatePinningPlugin : FlutterPlugin, MethodCallHandler {
       }
 
       return try {
-          val trustManagerExtensions = X509TrustManagerExtensions(this.getDefaultX509TrustManager())
+          val trustManagerExtensions = this.getTrustManagerExtensions()
           val authType = certificateChain.first().publicKey.algorithm
           trustManagerExtensions.checkServerTrusted(certificateChain, authType, host)
       } catch (e: Exception) {
@@ -156,13 +162,38 @@ public class HttpCertificatePinningPlugin : FlutterPlugin, MethodCallHandler {
       }
   }
 
-  private fun getDefaultX509TrustManager(): X509TrustManager {
-      val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
-      trustManagerFactory.init(null as KeyStore?)
+  private fun getTrustManagerExtensions(): X509TrustManagerExtensions {
+      var extensions = trustManagerExtensions
+      if (extensions == null) {
+          synchronized(HttpCertificatePinningPlugin::class.java) {
+              extensions = trustManagerExtensions
+              if (extensions == null) {
+                  extensions = X509TrustManagerExtensions(this.getDefaultX509TrustManager())
+                  trustManagerExtensions = extensions
+              }
+          }
+      }
 
-      return trustManagerFactory.trustManagers
-          .filterIsInstance<X509TrustManager>()
-          .firstOrNull() ?: throw CertificateException("No X509TrustManager available")
+      return extensions ?: throw CertificateException("No X509TrustManagerExtensions available")
+  }
+
+  private fun getDefaultX509TrustManager(): X509TrustManager {
+      var trustManager = defaultTrustManager
+      if (trustManager == null) {
+          synchronized(HttpCertificatePinningPlugin::class.java) {
+              trustManager = defaultTrustManager
+              if (trustManager == null) {
+                  val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+                  trustManagerFactory.init(null as KeyStore?)
+                  trustManager = trustManagerFactory.trustManagers
+                      .filterIsInstance<X509TrustManager>()
+                      .firstOrNull() ?: throw CertificateException("No X509TrustManager available")
+                  defaultTrustManager = trustManager
+              }
+          }
+      }
+
+      return trustManager ?: throw CertificateException("No X509TrustManager available")
   }
 
   private fun hashString(type: String, input: ByteArray) =

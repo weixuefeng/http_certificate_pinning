@@ -10,10 +10,12 @@ class CertificatePinningInterceptor extends Interceptor {
   final CertificatePinningTarget _certificatePinningTarget;
   final Duration _cacheDuration;
   final bool callFollowingErrorInterceptor;
+  final SHA _sha;
 
   CertificatePinningInterceptor({
     List<String>? allowedSHAFingerprints,
     int timeout = 0,
+    SHA sha = SHA.SHA256,
     CertificatePinningTarget certificatePinningTarget =
         CertificatePinningTarget.leaf,
     Duration cacheDuration = const Duration(minutes: 10),
@@ -21,6 +23,7 @@ class CertificatePinningInterceptor extends Interceptor {
   })  : _allowedSHAFingerprints = allowedSHAFingerprints != null
             ? allowedSHAFingerprints
             : <String>[],
+        _sha = sha,
         _certificatePinningTarget = certificatePinningTarget,
         _cacheDuration = cacheDuration,
         _timeout = timeout;
@@ -40,7 +43,7 @@ class CertificatePinningInterceptor extends Interceptor {
       final secureString = await HttpCertificatePinning.check(
         serverURL: baseUrl,
         headerHttp: {},
-        sha: SHA.SHA256,
+        sha: _sha,
         allowedSHAFingerprints: _allowedSHAFingerprints,
         certificatePinningTarget: _certificatePinningTarget,
         cacheDuration: _cacheDuration,

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:http/io_client.dart';
@@ -10,11 +11,13 @@ class SecureHttpClient extends http.BaseClient {
   List<String> allowedSHAFingerprints;
   CertificatePinningTarget certificatePinningTarget;
   Duration cacheDuration;
+  SHA sha;
 
   http.BaseClient _client = IOClient();
 
   SecureHttpClient._internal({
     required this.allowedSHAFingerprints,
+    required this.sha,
     required this.certificatePinningTarget,
     required this.cacheDuration,
     http.BaseClient? customClient,
@@ -26,6 +29,7 @@ class SecureHttpClient extends http.BaseClient {
 
   factory SecureHttpClient.build(
     List<String> allowedSHAFingerprints, {
+    SHA sha = SHA.SHA256,
     CertificatePinningTarget certificatePinningTarget =
         CertificatePinningTarget.leaf,
     Duration cacheDuration = const Duration(minutes: 10),
@@ -33,6 +37,7 @@ class SecureHttpClient extends http.BaseClient {
   }) {
     return SecureHttpClient._internal(
       allowedSHAFingerprints: allowedSHAFingerprints,
+      sha: sha,
       certificatePinningTarget: certificatePinningTarget,
       cacheDuration: cacheDuration,
       customClient: customClient,
@@ -104,7 +109,7 @@ class SecureHttpClient extends http.BaseClient {
     final secureString = await HttpCertificatePinning.check(
       serverURL: url.toString(),
       headerHttp: {},
-      sha: SHA.SHA256,
+      sha: sha,
       allowedSHAFingerprints: allowedSHAFingerprints,
       certificatePinningTarget: certificatePinningTarget,
       cacheDuration: cacheDuration,

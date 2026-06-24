@@ -16,7 +16,7 @@ final class CertificateSHAFingerprintTrustEvaluator: ServerTrustEvaluating {
         type: String,
         certificatePinningTarget: String
     ) {
-        self.type = type
+        self.type = type.uppercased()
         self.certificatePinningTarget = certificatePinningTarget.lowercased()
         self.pinnedFingerprints = pinnedFingerprints.map { $0.lowercased() }
     }

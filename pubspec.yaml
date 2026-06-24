@@ -1,6 +1,6 @@
 name: http_certificate_pinning_plus
 description: HTTPS certificate pinning for Flutter with SHA-1/SHA-256 fingerprints, leaf or root certificate validation, Dio/http helpers, and in-memory check caching.
-version: 3.1.0
+version: 3.2.0
 homepage: https://github.com/weixuefeng/http_certificate_pinning
 
 environment:

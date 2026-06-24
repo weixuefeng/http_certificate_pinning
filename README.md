@@ -17,7 +17,7 @@ In your flutter or dart project add the dependency:
 ```yml
 dependencies:
   ...
-  http_certificate_pinning_plus: ^3.1.0
+  http_certificate_pinning_plus: ^3.2.0
 ```
 
 ## Get Certificate FingerPrint

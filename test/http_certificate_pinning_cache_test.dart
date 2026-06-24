@@ -128,4 +128,52 @@ void main() {
 
     expect(nativeCalls, 2);
   });
+
+  test('completed stale checks do not remove newer pending checks', () async {
+    var nativeCalls = 0;
+    final completers = <Completer<String>>[];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) {
+      nativeCalls++;
+      final completer = Completer<String>();
+      completers.add(completer);
+      return completer.future;
+    });
+
+    final firstCheck = HttpCertificatePinning.check(
+      serverURL: 'https://example.com/login',
+      sha: SHA.SHA256,
+      allowedSHAFingerprints: const ['AA:BB'],
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(nativeCalls, 1);
+
+    HttpCertificatePinning.clearCache();
+
+    final secondCheck = HttpCertificatePinning.check(
+      serverURL: 'https://example.com/orders',
+      sha: SHA.SHA256,
+      allowedSHAFingerprints: const ['AA BB'],
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(nativeCalls, 2);
+
+    completers[0].complete('CONNECTION_SECURE');
+    await firstCheck;
+
+    final thirdCheck = HttpCertificatePinning.check(
+      serverURL: 'https://example.com/profile',
+      sha: SHA.SHA256,
+      allowedSHAFingerprints: const ['AA:BB'],
+    );
+    await Future<void>.delayed(Duration.zero);
+    expect(nativeCalls, 2);
+
+    completers[1].complete('CONNECTION_SECURE');
+
+    expect(
+      await Future.wait(<Future<String>>[secondCheck, thirdCheck]),
+      const ['CONNECTION_SECURE', 'CONNECTION_SECURE'],
+    );
+  });
 }

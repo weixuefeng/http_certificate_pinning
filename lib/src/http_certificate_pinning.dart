@@ -87,7 +87,9 @@ class HttpCertificatePinning {
     try {
       return await checkFuture;
     } finally {
-      _pendingChecks.remove(cacheKey);
+      if (_pendingChecks[cacheKey] == checkFuture) {
+        _pendingChecks.remove(cacheKey);
+      }
     }
   }
 

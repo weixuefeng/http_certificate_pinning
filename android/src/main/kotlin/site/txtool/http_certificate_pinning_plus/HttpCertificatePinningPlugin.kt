@@ -142,11 +142,14 @@ public class HttpCertificatePinningPlugin : FlutterPlugin, MethodCallHandler {
   }
 
   private fun getValidatedCertificateChain(host: String, serverCertificates: Array<Certificate>): List<X509Certificate> {
-      val certificateChain = serverCertificates.map { cert -> cert as X509Certificate }.toTypedArray()
-      val trustManagerExtensions = X509TrustManagerExtensions(this.getDefaultX509TrustManager())
-      val authType = certificateChain.first().publicKey.algorithm
+      val certificateChain = serverCertificates.filterIsInstance<X509Certificate>().toTypedArray()
+      if (certificateChain.isEmpty()) {
+          throw CertificateException("No X509 certificates found in connection")
+      }
 
       return try {
+          val trustManagerExtensions = X509TrustManagerExtensions(this.getDefaultX509TrustManager())
+          val authType = certificateChain.first().publicKey.algorithm
           trustManagerExtensions.checkServerTrusted(certificateChain, authType, host)
       } catch (e: Exception) {
           certificateChain.toList()

@@ -11,7 +11,6 @@ class HttpCertificatePinning {
   static final Map<String, DateTime> _verifiedChecks = <String, DateTime>{};
   static final Map<String, Future<String>> _pendingChecks =
       <String, Future<String>>{};
-  static Future<void> _iosCheckQueue = Future<void>.value();
   static int _cacheGeneration = 0;
 
   static const MethodChannel _channel = const MethodChannel(

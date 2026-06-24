@@ -154,7 +154,7 @@ public class HttpCertificatePinningPlugin : FlutterPlugin, MethodCallHandler {
       }
       val trustManagerExtensions = this.getTrustManagerExtensions()
       val authType = certificateChain.first().publicKey.algorithm
-      trustManagerExtensions.checkServerTrusted(certificateChain, authType, host)
+      return trustManagerExtensions.checkServerTrusted(certificateChain, authType, host)
   }
 
   private fun getTrustManagerExtensions(): X509TrustManagerExtensions {
